@@ -1,0 +1,575 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corretor de Redações</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --purple-50:#EEEDFE; --purple-100:#CECBF6; --purple-400:#7F77DD;
+            --purple-600:#534AB7; --purple-800:#3C3489; --purple-900:#26215C;
+        }
+        *{box-sizing:border-box;}
+        body{background:#f0efe8;font-family:'DM Sans',sans-serif;font-size:16px;overflow:hidden;}
+
+        /* ===== TEXTAREA - fonte maior e mais nítida (id vence a classe form-control do Bootstrap) ===== */
+        #texto {
+            resize: none;
+            font-family: 'Lora', Georgia, serif;
+            font-size: 18px;
+            font-weight: 500;
+            line-height: 1.9;
+            letter-spacing: 0.2px;
+            border: 1.5px solid #b5b3a8 !important;
+            border-radius: 12px !important;
+            background: #fffffe !important;
+            color: #100f0e !important;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+            transition: border-color .2s;
+        }
+
+        #texto:focus {
+            border-color: var(--purple-600) !important;
+            box-shadow: 0 0 0 3px rgba(83, 74, 183, 0.2) !important;
+            outline: none;
+        }
+
+        #texto::placeholder {
+            color: #6e6d66;
+            font-style: italic;
+        }
+
+        .left-panel{background:#fffffe;height:100vh;border-right:1px solid #e2e0d8;overflow-y:auto;}
+        .right-panel{background:#f7f6f1;height:100vh;overflow-y:auto;}
+        .top-header{background:#fffffe;border-radius:16px;padding:16px 22px;border:1px solid #e2e0d8;margin-bottom:28px;}
+        .logo-box{width:58px;height:58px;background:var(--purple-900);border-radius:14px;
+            display:flex;align-items:center;justify-content:center;overflow:hidden;}
+        .logo-box img{width:44px;height:44px;object-fit:contain;}
+        .app-title{font-family:'Lora',serif;font-weight:600;font-size:20px;color:var(--purple-900);margin:0;letter-spacing:-.3px;}
+        .app-subtitle{font-size:13px;color:#888780;margin:0;}
+        .menu-btn{width:44px;height:44px;border:1px solid #e2e0d8;border-radius:10px;background:transparent;
+            font-size:22px;color:var(--purple-800);transition:.15s;display:flex;align-items:center;justify-content:center;}
+        .menu-btn:hover{background:var(--purple-50);border-color:var(--purple-100);}
+        .top-icons button{width:40px;height:40px;border-radius:10px;border:1px solid #e2e0d8;
+            background:transparent;color:#5f5e5a;font-size:17px;
+            display:flex;align-items:center;justify-content:center;transition:.15s;}
+        .top-icons button:hover{background:var(--purple-50);color:var(--purple-800);border-color:var(--purple-100);}
+        .sidebar{position:fixed;top:0;left:-290px;width:290px;height:100vh;background:var(--purple-900);
+            z-index:3000;transition:.28s cubic-bezier(.4,0,.2,1);padding:28px 22px;border-right:1px solid var(--purple-800);}
+        .sidebar.active{left:0;}
+        .sidebar-header{color:white;margin-bottom:32px;}
+        .sidebar-header h4{font-family:'Lora',serif;font-weight:600;font-size:18px;margin:0;color:#fffffe;}
+        .sidebar-btn{width:100%;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);
+            color:rgba(255,255,255,.85);padding:13px 16px;border-radius:10px;text-align:left;
+            font-size:15px;font-family:'DM Sans',sans-serif;transition:.15s;}
+        .sidebar-btn:hover{background:rgba(255,255,255,.14);color:white;}
+        .form-label{font-size:13px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:#888780;margin-bottom:8px;}
+        .form-select{border:1.5px solid #dbd9d0;border-radius:10px;font-family:'DM Sans',sans-serif;
+            font-size:15px;color:#2a2928;background-color:#fffffe;height:46px;transition:border-color .2s;}
+        .form-select:focus{border-color:var(--purple-400);box-shadow:0 0 0 3px rgba(127,119,221,.12);}
+        .btn-corrigir{background:var(--purple-900);color:#fffffe;border:none;border-radius:11px;
+            padding:14px 34px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:500;
+            transition:.18s;display:inline-flex;align-items:center;gap:8px;}
+        .btn-corrigir:hover{background:var(--purple-800);color:white;transform:translateY(-1px);}
+        .btn-corrigir:active{transform:scale(.99);}
+        .btn-corrigir.loading{opacity:.7;pointer-events:none;}
+        .word-count{font-size:13px;color:#b0aea6;text-align:right;margin-top:6px;}
+        .upload-box{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 16px;border:1px dashed #c9c6dc;border-radius:14px;background:#faf9ff;}
+        .upload-copy{display:flex;align-items:center;gap:12px;}
+        .upload-icon{width:42px;height:42px;border-radius:12px;background:#EEEDFE;color:#534AB7;display:grid;place-items:center;font-size:20px;}
+        .upload-button{border-radius:10px;white-space:nowrap;}
+        .image-selected{display:flex;align-items:center;gap:9px;max-width:100%;}
+        .image-selected img{width:50px;height:50px;object-fit:cover;border-radius:9px;border:1px solid #e2e0d8;}
+        .image-selected #nomeImagem{max-width:190px;}
+        #texto:disabled{background:#f1f0ec!important;color:#777!important;cursor:not-allowed;}
+        .nota-card{background:var(--purple-900);border-radius:18px;padding:28px;margin-bottom:14px;position:relative;overflow:hidden;}
+        .nota-card::before{content:'';position:absolute;top:-40px;right:-40px;width:130px;height:130px;
+            border-radius:50%;background:rgba(255,255,255,.04);}
+        .nota-label{font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;
+            color:var(--purple-100);margin-bottom:8px;}
+        .nota-numero{font-family:'Lora',serif;font-size:80px;font-weight:600;line-height:1;
+            color:#fffffe;letter-spacing:-3px;}
+        .nivel-badge{display:inline-block;margin-top:12px;font-size:13px;font-weight:500;
+            padding:5px 14px;border-radius:50px;background:rgba(255,255,255,.13);
+            color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.2);}
+        .nivel-badge.excelente{background:rgba(29,158,117,.25);border-color:rgba(29,158,117,.4);color:#9FE1CB;}
+        .nivel-badge.bom{background:rgba(127,119,221,.2);border-color:rgba(127,119,221,.4);color:var(--purple-100);}
+        .nivel-badge.regular{background:rgba(186,117,23,.2);border-color:rgba(186,117,23,.4);color:#FAC775;}
+        .nivel-badge.insuficiente{background:rgba(226,75,74,.2);border-color:rgba(226,75,74,.4);color:#F7C1C1;}
+
+        /* CHART CARD */
+        .chart-card{background:#fffffe;border-radius:14px;padding:20px;margin-bottom:14px;border:1px solid #e2e0d8;}
+        .chart-card-header{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+        .card-icon{width:34px;height:34px;border-radius:9px;background:var(--purple-50);
+            color:var(--purple-600);display:flex;align-items:center;justify-content:center;font-size:16px;}
+        .chart-card h6{font-size:14px;font-weight:600;color:#2a2928;margin:0;}
+
+        .vertical-chart{
+            display:flex;
+            justify-content:space-between;
+            align-items:flex-end;
+            height:220px;
+            gap:16px;
+            padding-top:20px;
+        }
+
+        .bar-column{
+            flex:1;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+        }
+
+        .bar-track-vertical{
+            width:40px;
+            height:160px;
+            background:#f0efe8;
+            border-radius:10px;
+            overflow:hidden;
+            display:flex;
+            align-items:flex-end;
+        }
+
+        .bar-fill-vertical{
+            width:100%;
+            height:0%;
+            background:#7F77DD;
+            transition:height .8s ease;
+        }
+
+        .bar-value{
+            margin-top:8px;
+            font-weight:600;
+            font-size:14px;
+        }
+
+        .bar-label{
+            margin-top:4px;
+            font-size:12px;
+            text-align:center;
+        }
+
+        /* FEEDBACK */
+        .feedback-card{background:#fffffe;border-radius:14px;padding:20px;border:1px solid #e2e0d8;}
+        .feedback-card h5{font-size:14px;font-weight:600;color:#2a2928;margin-bottom:18px;}
+        .feedback-item{padding:14px 0;border-bottom:1px solid #f0efe8;}
+        .feedback-item:last-child{border-bottom:none;padding-bottom:0;}
+        .feedback-item:first-child{padding-top:0;}
+        .feedback-label{font-size:14px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;
+            color:var(--purple-600);margin-bottom:5px;display:flex;align-items:center;gap:6px;}
+        .feedback-label .dot{width:5px;height:5px;border-radius:50%;background:var(--purple-400);flex-shrink:0;}
+        .feedback-text{font-size:16px;color:#5f5e5a;line-height:1.6;margin:0;}
+        ::-webkit-scrollbar{width:5px;}
+        ::-webkit-scrollbar-track{background:transparent;}
+        ::-webkit-scrollbar-thumb{background:#d3d1c7;border-radius:10px;}
+    </style>
+</head>
+<body>
+
+<div id="sidebar" class="sidebar">
+
+    <div class="sidebar-header d-flex justify-content-between align-items-center">
+        <h4>Menu</h4>
+        <button class="btn-close btn-close-white" onclick="toggleSidebar()"></button>
+    </div>
+
+    <h5 class="px-3 text-white">
+        Olá, {{ session.get("nome", "visitante") }}!
+    </h5>
+
+    {% if session.get("idUsuario") %}
+    <a href="/logout">
+        <button class="sidebar-btn">
+            <i class="bi bi-box-arrow-left me-2"></i>Sair
+        </button>
+    </a>
+    {% else %}
+    <a href="/login">
+        <button class="sidebar-btn">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Login
+        </button>
+    </a>
+    {% endif %}
+
+    <a href="/historico">
+        <button class="sidebar-btn">
+            <i class="bi bi-clock-history me-2"></i>Histórico de Redações
+        </button>
+    </a>
+    <a href="/redacoes-modelo"><button class="sidebar-btn"><i class="bi bi-journal-bookmark me-2"></i>Redações-modelo</button></a>
+
+    <a href="/sobre">
+        <button class="sidebar-btn">
+            <i class="bi bi-question-circle me-2"></i>Sobre
+        </button>
+    </a>
+
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+
+        <!-- ESQUERDA -->
+        <div class="col-lg-8 left-panel p-4">
+            <div class="top-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="menu-btn" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+                    <div class="logo-box"><img src="static/uploads/images/Logo.png" alt="Logo"></div>
+                    <div>
+                        <p class="app-title">Corretor de Redações</p>
+                        <p class="app-subtitle">Plataforma inteligente de correção textual</p>
+                    </div>
+                </div>
+                <div class="top-icons d-flex gap-2">
+                    <button title="Buscar"><i class="bi bi-search"></i></button>
+                    <button title="Baixar"><i class="bi bi-download"></i></button>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Gênero textual</label>
+                    <select id="genero" class="form-select">
+                        <option>Dissertação Argumentativa</option>
+                        <option>Artigo de Opinião</option>
+                        <option>Resumo</option>
+                        <option>Carta</option>
+                        <option>Poema</option>
+                        <option>Crônica</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Tema</label>
+                    <input type="text" id="tema" class="form-control" placeholder="Sem tema">
+                </div>
+            </div>
+
+            
+
+            <div class="mb-2">
+                <textarea id="texto" class="form-control p-2" rows="15"
+                    placeholder="Escreva ou cole sua redação aqui…"
+                    oninput="atualizarContagem()"></textarea>
+            </div>
+            <div class="upload-box mb-3" id="uploadBox">
+                <div class="upload-copy"><span class="upload-icon"><i class="bi bi-image"></i></span><div><strong id="uploadTitle">Quer enviar uma foto da redação?</strong><div class="small text-muted">PNG, JPG ou WebP · até 5 MB</div></div></div>
+                <input id="imagemRedacao" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+                <label id="imagemBotao" for="imagemRedacao" class="btn btn-outline-primary upload-button"><i class="bi bi-upload me-1"></i>Escolher imagem</label>
+                <span id="metodoEnvio" class="visually-hidden">Método selecionado: texto</span>
+                <div id="imagemSelecionadaCard" class="image-selected" hidden>
+                    <img id="imagemPreview" alt="Prévia da redação anexada">
+                    <span id="nomeImagem" class="small text-truncate"></span>
+                    <label for="imagemRedacao" class="btn btn-sm btn-outline-secondary">Trocar</label>
+                    <button id="removerImagem" type="button" class="btn btn-sm btn-outline-danger" onclick="limparImagem()" aria-label="Remover imagem">Remover</button>
+                </div>
+            </div>
+            <div class="word-count" id="wordCount">0 palavras</div>
+
+            <div class="mt-4 mb-5">
+                <button id="btnEnviar" onclick="enviar()" class="btn-corrigir">
+                    <i class="bi bi-send-fill" style="font-size:14px;"></i>
+                    Corrigir redação
+                </button>
+            </div>
+        </div>
+
+        <!-- DIREITA -->
+        <div class="col-lg-4 right-panel p-4">
+
+            <div class="nota-card">
+                <div class="nota-label">Sua nota</div>
+                <div id="notaNumero" class="nota-numero">—</div>
+                <div><span id="nivelBadge" class="nivel-badge">Aguardando análise</span></div>
+            </div>
+
+            <!-- GRÁFICO VERTICAL -->
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <div class="card-icon">
+                        <i class="bi bi-bar-chart-fill"></i>
+                    </div>
+                    <h6>Notas por critério</h6>
+                </div>
+
+                <div class="vertical-chart">
+
+                    <div class="bar-column">
+                        <div class="bar-track-vertical">
+                            <div class="bar-fill-vertical" id="bar-estrutura"></div>
+                        </div>
+                        <span class="bar-value" id="val-estrutura">0.0</span>
+                        <span class="bar-label">Estrutura</span>
+                    </div>
+
+                    <div class="bar-column">
+                        <div class="bar-track-vertical">
+                            <div class="bar-fill-vertical" id="bar-tema"></div>
+                        </div>
+                        <span class="bar-value" id="val-tema">0.0</span>
+                        <span class="bar-label">Tema</span>
+                    </div>
+
+                    <div class="bar-column">
+                        <div class="bar-track-vertical">
+                            <div class="bar-fill-vertical" id="bar-gramatica"></div>
+                        </div>
+                        <span class="bar-value" id="val-gramatica">0.0</span>
+                        <span class="bar-label">Gramática</span>
+                    </div>
+
+                    <div class="bar-column" id="colunaRepertorio">
+                        <div class="bar-track-vertical">
+                            <div class="bar-fill-vertical" id="bar-repertorio"></div>
+                        </div>
+                        <span class="bar-value" id="val-repertorio">0.0</span>
+                        <span class="bar-label">Repertório</span>
+                    </div>
+
+                    <div class="bar-column">
+                        <div class="bar-track-vertical">
+                            <div class="bar-fill-vertical" id="bar-coesaoTextual"></div>
+                        </div>
+                        <span class="bar-value" id="val-coesaoTextual">0.0</span>
+                        <span class="bar-label">Coesão</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <script>
+            function atualizarGrafico(dados) {
+
+                const notas = {
+                    estrutura: parseFloat(dados.nota_estrutura || 0),
+                    tema: parseFloat(dados.nota_tema || 0),
+                    gramatica: parseFloat(dados.nota_gramatica || 0),
+                    repertorio: parseFloat(dados.nota_repertorio || 0),
+                    coesaoTextual: parseFloat(dados.nota_coesaoTextual || 0)
+                };
+
+                Object.keys(notas).forEach(chave => {
+                    const nota = notas[chave];
+
+                    const barra = document.getElementById(`bar-${chave}`);
+                    const valor = document.getElementById(`val-${chave}`);
+
+                    if (barra) {
+                       const percentual = (nota / 10) * 100;
+
+                       barra.style.height = percentual + "%";
+
+                       if (nota >= 8)
+                           barra.style.background = "#1D9E75";
+                       else if (nota >= 6)
+                           barra.style.background = "#7F77DD";
+                       else if (nota >= 4)
+                           barra.style.background = "#BA7517";
+                       else
+                           barra.style.background = "#E24B4A";
+                    }
+
+                    if (valor) {
+                        valor.textContent = nota.toFixed(1);
+                    }
+                });
+            }
+            </script>
+
+            <!-- FEEDBACK -->
+            <div class="feedback-card">
+                <h5>Correções detalhadas</h5>
+
+                <div class="feedback-item">
+                    <div class="feedback-label"><span class="dot"></span>Estrutura</div>
+                    <p id="txtStruct" class="feedback-text">—</p>
+                </div>
+                <div class="feedback-item">
+                    <div class="feedback-label"><span class="dot"></span>Tema</div>
+                    <p id="txtTema" class="feedback-text">—</p>
+                </div>
+                <div class="feedback-item">
+                    <div class="feedback-label"><span class="dot"></span>Gramática</div>
+                    <p id="txtGeC" class="feedback-text">—</p>
+                </div>
+                <div class="feedback-item" id="feedbackRepertorio">
+                    <div class="feedback-label"><span class="dot"></span>Repertório</div>
+                    <p id="txtRep" class="feedback-text">—</p>
+                </div>
+                <div class="feedback-item">
+                    <div class="feedback-label"><span class="dot"></span>Coesão Textual</div>
+                    <p id="txtCoe" class="feedback-text">—</p>
+                </div>
+                <div class="feedback-item">
+                    <div class="feedback-label"><span class="dot"></span>Recomendações</div>
+                    <p id="txtTip" class="feedback-text">—</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleSidebar(){
+    document.getElementById("sidebar").classList.toggle("active");
+}
+
+function atualizarContagem(){
+    const t = document.getElementById("texto").value.trim();
+    const n = t ? t.split(/\s+/).length : 0;
+    document.getElementById("wordCount").textContent = n + (n===1?" palavra":" palavras");
+}
+
+let imagemSelecionada = null;
+document.getElementById("imagemRedacao").addEventListener("change", event => {
+    const file = event.target.files[0];
+    if(!file) return;
+    const campoTexto = document.getElementById("texto");
+    if(!imagemSelecionada && campoTexto.value.trim() && !confirm("Ao usar uma imagem, o texto digitado será apagado. Deseja continuar?")){
+        event.target.value = "";
+        return;
+    }
+    if(!["image/png","image/jpeg","image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024){
+        alert("Selecione uma imagem PNG, JPG ou WebP de até 5 MB."); event.target.value = ""; return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => { alert("Não foi possível ler o arquivo selecionado."); event.target.value = ""; };
+    reader.onload = () => {
+        imagemSelecionada = reader.result;
+        campoTexto.value = "";
+        campoTexto.disabled = true;
+        atualizarContagem();
+        document.getElementById("imagemPreview").src = reader.result;
+        document.getElementById("imagemSelecionadaCard").hidden = false;
+        document.getElementById("imagemBotao").hidden = true;
+        document.getElementById("uploadTitle").textContent = "Imagem pronta para correção";
+        document.getElementById("nomeImagem").textContent = file.name;
+        document.getElementById("metodoEnvio").textContent = "Método selecionado: imagem";
+    };
+    reader.readAsDataURL(file);
+});
+
+function limparImagem(){
+    imagemSelecionada = null;
+    document.getElementById("imagemRedacao").value = "";
+    document.getElementById("texto").disabled = false;
+    document.getElementById("imagemPreview").removeAttribute("src");
+    document.getElementById("imagemSelecionadaCard").hidden = true;
+    document.getElementById("imagemBotao").hidden = false;
+    document.getElementById("uploadTitle").textContent = "Quer enviar uma foto da redação?";
+    document.getElementById("nomeImagem").textContent = "";
+    document.getElementById("metodoEnvio").textContent = "Método selecionado: texto";
+}
+
+function barColor(v){
+    if(v>=8) return "#1D9E75";
+    if(v>=6) return "#7F77DD";
+    if(v>=4) return "#BA7517";
+    return "#E24B4A";
+}
+
+function setBar(id, valor){
+    const v = parseFloat(valor) || 0;
+    const pct = Math.min(Math.max(v/10*100, 0), 100);
+    const fill = document.getElementById("bar-"+id);
+    const val  = document.getElementById("val-"+id);
+    fill.style.width = pct+"%";
+    fill.style.background = barColor(v);
+    val.textContent = v > 0 ? v.toFixed(1) : "—";
+}
+
+function extrairNota(txt){
+    if(!txt) return "--";
+    const m = txt.match(/\d+(\.\d+)?/);
+    return m ? m[0] : "--";
+}
+
+function extrairNumero(txt){
+    if(!txt) return 0;
+    const m = txt.match(/\d+(\.\d+)?/);
+    return m ? parseFloat(m[0]) : 0;
+}
+
+function definirNivel(nota){
+    nota = parseFloat(nota);
+    if(isNaN(nota)) return {texto:"Sem avaliação",classe:""};
+    if(nota>=9) return {texto:"Excelente",classe:"excelente"};
+    if(nota>=7) return {texto:"Bom",classe:"bom"};
+    if(nota>=5) return {texto:"Regular",classe:"regular"};
+    return {texto:"Insuficiente",classe:"insuficiente"};
+}
+
+function atualizarVisibilidadeRepertorio() {
+    const genero = document.getElementById("genero").value;
+
+    const possuiRepertorio =
+        genero === "Dissertação Argumentativa" ||
+        genero === "Artigo de Opinião";
+
+    document.getElementById("feedbackRepertorio").hidden = !possuiRepertorio;
+    document.getElementById("colunaRepertorio").hidden = !possuiRepertorio;
+}
+atualizarVisibilidadeRepertorio();
+document.getElementById("genero").addEventListener(
+    "change",
+    atualizarVisibilidadeRepertorio
+);
+
+async function enviar(){
+    const texto  = document.getElementById("texto").value;
+    const genero = document.getElementById("genero").value;
+    const tema = document.getElementById("tema").value;
+    if(!texto.trim() && !imagemSelecionada){ alert("Digite a redação ou selecione uma imagem."); return; }
+
+    const botao = document.getElementById("btnEnviar");
+    botao.innerHTML = `<span class="spinner-border spinner-border-sm" style="width:14px;height:14px;"></span> Corrigindo…`;
+    botao.classList.add("loading");
+
+    try {
+        const res  = await fetch("/corrigir",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({texto,genero,tema,imagem:imagemSelecionada})
+        });
+        const data = await res.json();
+        if(data.erro){ alert(data.erro); return; }
+
+        document.getElementById("txtStruct").innerText = data.txtStruct || "—";
+        document.getElementById("txtTema").innerText   = data.txtTema   || "—";
+        document.getElementById("txtGeC").innerText    = data.txtGeC    || "—";
+
+        document.getElementById("txtRep").innerText    = data.txtRep    || "—";
+        atualizarVisibilidadeRepertorio();
+
+        document.getElementById("txtCoe").innerText    = data.txtCoe    || "—";
+        document.getElementById("txtTip").innerText    = data.txtTip    || "—";
+        if(imagemSelecionada && data.texto_transcrito) document.getElementById("texto").value = data.texto_transcrito;
+
+        const nota  = extrairNota(data.txtNota);
+        const nivel = definirNivel(nota);
+        document.getElementById("notaNumero").innerText = Number(nota).toFixed(1);
+        const badge = document.getElementById("nivelBadge");
+        badge.innerText = nivel.texto;
+        badge.className = "nivel-badge "+nivel.classe;
+
+        atualizarGrafico(data);
+
+    } catch(e){
+        console.error(e);
+        alert("Erro ao conectar com o servidor.");
+    } finally {
+        botao.innerHTML = `<i class="bi bi-send-fill" style="font-size:14px;"></i> Corrigir redação`;
+        botao.classList.remove("loading");
+    }
+}
+</script>
+</body>
+</html>
+
+
